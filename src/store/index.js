@@ -36,6 +36,7 @@ export default new Vuex.Store({
     },
     setClearList(state) {
       state.list = [];
+      state.blackList = [];
     },
     setClearPhotos(state) {
       state.photos = [];
@@ -56,6 +57,7 @@ export default new Vuex.Store({
       };
       state.newLottery = [];
       state.list = [];
+      state.blackList = [];
       state.photos = [];
     },
     setConfig(state, config) {
