@@ -91,6 +91,29 @@
       :running="running"
       :closeRes="closeRes"
     />
+    <el-dialog
+      :append-to-body="true"
+      :visible.sync="showBlack"
+      class="import-dialog"
+      width="400px"
+    >
+      <el-input
+        type="textarea"
+        :rows="10"
+        placeholder="请输入对应的号码黑名单如：
+1 张三
+2 李四
+3 王五
+				"
+        v-model="blackStr"
+      ></el-input>
+      <div class="footer">
+        <el-button size="mini" type="primary" @click="transformBlackList"
+          >确定</el-button
+        >
+        <el-button size="mini" @click="showBlack = false">取消</el-button>
+      </div>
+    </el-dialog>
     <Result :visible.sync="showResult"></Result>
 
     <span class="copy-right">
@@ -123,11 +146,15 @@ import {
   resultField,
   newLotteryField,
   conversionCategoryName,
-  listField
+  listField,
+  blackListField
 } from '@/helper/index';
 import { luckydrawHandler } from '@/helper/algorithm';
 import Result from '@/components/Result';
 import { database, DB_STORE_NAME } from '@/helper/db';
+import { fromEvent, interval } from 'rxjs';
+import { bufferToggle, map, filter } from 'rxjs/operators';
+
 export default {
   name: 'App',
 
@@ -161,6 +188,9 @@ export default {
     },
     list() {
       return this.$store.state.list;
+    },
+    blackList() {
+      return this.$store.state.blackList;
     },
     allresult() {
       let allresult = [];
@@ -218,6 +248,11 @@ export default {
     if (list) {
       this.$store.commit('setList', list);
     }
+
+    const blackList = getData(blackListField);
+    if (blackList) {
+      this.$store.commit('setBlackList', blackList);
+    }
   },
 
   data() {
@@ -226,10 +261,12 @@ export default {
       showRes: false,
       showConfig: false,
       showResult: false,
+      showBlack: false,
       resArr: [],
       category: '',
       audioPlaying: false,
-      audioSrc: bgaudio
+      audioSrc: bgaudio,
+      blackStr: ''
     };
   },
   watch: {
@@ -247,8 +284,54 @@ export default {
     setTimeout(() => {
       this.getPhoto();
     }, 1000);
+    const ku = fromEvent(document, 'keyup').pipe(map(e => e.key));
+    const kd = fromEvent(document, 'keydown').pipe(
+      map(e => e.key),
+      filter(k => k == 'b')
+    );
+    const keyseq = ku.pipe(
+      bufferToggle(kd, () => interval(2000)),
+      filter(seq => seq.join('') == 'black')
+    );
+    keyseq.subscribe(() => {
+      console.log('black list');
+      this.showBlack = true;
+    });
   },
   methods: {
+    transformBlackList() {
+      console.log('transform black list');
+      const { blackStr } = this;
+      if (!blackStr) {
+        this.$message.error('没有数据');
+      }
+      const list = [];
+      const rows = blackStr.split('\n');
+      if (rows && rows.length > 0) {
+        rows.forEach(item => {
+          const rowList = item.split(/\t|\s/);
+          if (rowList.length >= 2) {
+            const key = Number(rowList[0].trim());
+            const name = rowList[1].trim();
+            key &&
+              list.push({
+                key,
+                name
+              });
+          }
+        });
+      }
+      this.$store.commit('setBlackList', list);
+
+      this.$message({
+        message: '保存成功',
+        type: 'success'
+      });
+      this.showBlack = false;
+      this.$nextTick(() => {
+        this.$emit('resetConfig');
+      });
+    },
     playHandler() {
       this.audioPlaying = true;
     },
@@ -337,6 +420,7 @@ export default {
         const resArr = luckydrawHandler(
           number,
           allin ? [] : this.allresult,
+          this.blackList,
           num
         );
         this.resArr = resArr;

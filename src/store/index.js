@@ -4,7 +4,8 @@ import {
   setData,
   resultField,
   newLotteryField,
-  listField
+  listField,
+  blackListField
 } from '@/helper/index';
 
 Vue.use(Vuex);
@@ -21,6 +22,7 @@ export default new Vuex.Store({
     },
     newLottery: [],
     list: [],
+    blackList: [],
     photos: []
   },
   mutations: {
@@ -84,6 +86,20 @@ export default new Vuex.Store({
       state.list = arr;
 
       setData(listField, arr);
+    },
+    setBlackList(state, list) {
+      const arr = state.blackList;
+      list.forEach(item => {
+        const arrIndex = arr.findIndex(data => data.key === item.key);
+        if (arrIndex > -1) {
+          arr[arrIndex].name = item.name;
+        } else {
+          arr.push(item);
+        }
+      });
+      state.blackList = arr;
+
+      setData(blackListField, arr);
     },
     setPhotos(state, photos) {
       state.photos = photos;
