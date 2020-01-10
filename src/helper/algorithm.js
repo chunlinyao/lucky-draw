@@ -42,9 +42,11 @@ export function luckydrawHandler(total, won = [], black = [], num) {
     const nodraws = peolist.filter(
       item => !wons.includes(item) && !blackKeys.includes(item)
     );
-    const current = nodraws[randomNum(1, nodraws.length) - 1];
-    res.push(current);
-    wons.push(current);
+    if (nodraws.length > 0) {
+      const current = nodraws[randomNum(1, nodraws.length) - 1];
+      res.push(current);
+      wons.push(current);
+    }
   }
   return res;
 }
